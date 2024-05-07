@@ -1,0 +1,7 @@
+n = 2; % Número de clientes
+m = 2; % Número de sitios posibles para instalaciones
+f = [10, 20]; % Costos fijos de abrir cada instalación
+c = [100, 200]; % Capacidades máximas de producción de cada instalación
+d = [50, 50]; % Demandas de los clientes
+b = [| 5, 10, 
+     | 10, 5 |]; % Benefici
