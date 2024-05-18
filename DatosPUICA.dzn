@@ -1,0 +1,6 @@
+n = 7; % Número de clientes
+m = 6; % Número de sitios posibles para instalaciones
+f = [10.0,10.0,10.0,10.0,10.0,10.0]; % Costos fijos de abrir cada instalación
+c = [6,6,6,6,6,6]; % Capacidades máximas de producción de cada instalación
+d = [1.5,2.0,3.0,4.0,2.5,1.0,2.0]; % Demandas de los clientes
+b = [| 4.0,4.0,3.5,1.3,0.5,-1.0, | 4.5,4.5,5.0,3.0,1.0,0.0, | 2.5,2.5,4.0,5.0,1.5,1.5, | 0.5,4.2,3.5,3.3,5.0,3.3, | 1.0,3.5,4.5,5.5,4.0,4.0, | 0.5,1.5,1.5,1.8,5.5,4.5, | -3.5,-0.5,0.0,1.3,3.0,2.0, | |]; % Beneficios

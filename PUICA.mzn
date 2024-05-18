@@ -1,4 +1,4 @@
-% Parámetros
+%Parámetros
 int: n; % Número de clientes
 int: m; % Número de sitios posibles para instalaciones
 array[1..m] of float: f; % Costos fijos de abrir cada instalación
@@ -7,7 +7,7 @@ array[1..n] of float: d; % Demandas de los clientes
 array[1..n, 1..m] of float: b; % Beneficios por vender a cada cliente desde cada instalación
 
 % Variables de decisión
-array[1..n, 1..m] of var float: x; % Cantidad a enviar de cada instalación a cada cliente
+array[1..n, 1..m] of var 0.0..50000: x; % Cantidad a enviar de cada instalación a cada cliente
 array[1..m] of var 0..1: a; % 1 si la instalación se abre, 0 en caso contrario
 
 % Restricciones
@@ -37,5 +37,23 @@ solve maximize sum(i in 1..m, j in 1..n)(b[j, i] * x[j, i]) - sum(i in 1..m)(f[i
 %output ["Instalaciones abiertas (a):"]
   %++ [show(a[i]) ++ if i == m then "" else ", " endif | i in 1..m];
   
- % Mostrar el valor de la función objetivo (utilidad máxima)
-%output ["\nUtilidad máxima: ", show(sum(i in 1..m, j in 1..n)(b[j, i] * x[j, i]) - sum(i in 1..m)(f[i] * a[i]))];
+% Mostrar el valor de la función objetivo (utilidad máxima)
+output ["\nUtilidad máxima: ", show(sum(i in 1..m, j in 1..n)(b[j, i] * x[j, i]) - sum(i in 1..m)(f[i] * a[i]))];
+
+% Mostrar las cantidades a enviar de cada instalación a cada cliente
+% Mostrar las cantidades a enviar de cada instalación a cada cliente
+output ["Productos que se enviarán al cliente c desde la instalación i:"]
+  ++ [if fix(x[j, i]) > 0 then
+       "\nx[" ++ show(j) ++ ", " ++ show(i) ++ "] = " ++ show_float(6, 2, x[j, i]) ++ " (enviar " ++ show_float(6, 2, x[j, i]) ++ " unidades al cliente " ++ show(j) ++ " desde la instalación " ++ show(i) ++ ")"
+     else
+       ""
+     endif | i in 1..m, j in 1..n]
+  ++ ["\n"]
+
+% Mostrar las instalaciones que se abrirán
+++ ["Instalaciones que se abrirán:"]
+++ [if fix(a[i]) == 1 then
+     "\na[" ++ show(i) ++ "] = 1 (abrir la instalación " ++ show(i) ++ ")"
+   else
+     "\na[" ++ show(i) ++ "] = 0 (no abrir la instalación " ++ show(i) ++ ")"
+   endif | i in 1..m];
