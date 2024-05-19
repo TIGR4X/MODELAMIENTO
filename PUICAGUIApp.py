@@ -27,16 +27,15 @@ def convert_txt_to_dzn(txt_file_path, dzn_file_path):
 
 #ventana emergente para seleccionar texto
 def select_txt_file():
-    txt_file_path = filedialog.askopenfilename(title="Select TXT file", filetypes=(("Text files", "*.txt"),))
     global dzn_file_path
+    txt_file_path = filedialog.askopenfilename(title="Seleccionar archivo TXT", filetypes=(("Archivos de texto", "*.txt"),))
     if txt_file_path:
         with open(txt_file_path, 'r') as file:
             input_text.delete(1.0, END)
             input_text.insert(END, file.read())
-        dzn_file_path = txt_file_path.replace('.txt', '.dzn')
+        dzn_file_path = os.path.join(os.path.dirname(txt_file_path), "DatosPUICA.dzn")
         convert_txt_to_dzn(txt_file_path, dzn_file_path)
-        print(f"Converted {txt_file_path} to {dzn_file_path}")
-
+        print(f"Convertido {txt_file_path} a {dzn_file_path}")
 
 def encontrar_ejecutable(nombre_ejecutable):
     # Separar las rutas del PATH usando el delimitador adecuado según el sistema operativo
