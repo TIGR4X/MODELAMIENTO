@@ -1,90 +1,127 @@
 import tkinter as tk
-from tkinter import ttk, filedialog
+from tkinter import ttk, filedialog, Text, Scrollbar, END
 import subprocess
+import os
 
-class PUICAGUIApp(tk.Tk):
-    def __init__(self):
-        super().__init__()
-        self.title("PUICA GUI")
-        self.geometry("800x600")
+#funcion que convierte el archivo txt en un archivo dzn para ser utilizado por minizinc
+def convert_txt_to_dzn(txt_file_path, dzn_file_path):
+    with open(txt_file_path, 'r') as txt_file:
+        lines = txt_file.readlines()
 
-        # Crear pestañas
-        self.tabs = ttk.Notebook(self)
-        self.tabs.pack(fill="both", padx=10, pady=10)
+    n = lines[0].strip()
+    m = lines[1].strip()
+    f = lines[2].strip().split(',')
+    c = lines[3].strip().split(',')
+    d = lines[4].strip().split(',')
+    b = [lines[i].strip().split(',') for i in range(5, 5 + int(n))]
 
-        # Pestaña de entrada
-        self.input_tab = ttk.Frame(self.tabs)
-        self.tabs.add(self.input_tab, text="Entrada")
-        self.create_input_widgets()
+    with open(dzn_file_path, 'w') as dzn_file:
+        dzn_file.write(f"n = {n};\n")
+        dzn_file.write(f"m = {m};\n")
+        dzn_file.write(f"f = [{','.join(f)}];\n")
+        dzn_file.write(f"c = [{','.join(c)}];\n")
+        dzn_file.write(f"d = [{','.join(d)}];\n")
+        b_flat = ', '.join([f"| {', '.join(row)}" for row in b])
+        b_flat += " |"
+        dzn_file.write(f"b = [{b_flat}];\n")
 
-        # Pestaña de salida
-        self.output_tab = ttk.Frame(self.tabs)
-        self.tabs.add(self.output_tab, text="Salida")
-        self.result_text = tk.Text(self.output_tab, height=20, width=70)
-        self.result_text.pack(pady=10)
+#ventana emergente para seleccionar texto
+def select_txt_file():
+    txt_file_path = filedialog.askopenfilename(title="Select TXT file", filetypes=(("Text files", "*.txt"),))
+    global dzn_file_path
+    if txt_file_path:
+        with open(txt_file_path, 'r') as file:
+            input_text.delete(1.0, END)
+            input_text.insert(END, file.read())
+        dzn_file_path = txt_file_path.replace('.txt', '.dzn')
+        convert_txt_to_dzn(txt_file_path, dzn_file_path)
+        print(f"Converted {txt_file_path} to {dzn_file_path}")
 
-        # Botón para seleccionar archivo de entrada
-        self.input_button = tk.Button(self.input_tab, text="Seleccionar archivo de entrada", command=self.select_input_file)
-        self.input_button.pack(pady=10)
 
-        # Botón para ejecutar el modelo
-        self.run_button = tk.Button(self, text="Ejecutar Modelo", command=self.run_model)
-        self.run_button.pack(pady=10)
+def encontrar_ejecutable(nombre_ejecutable):
+    # Separar las rutas del PATH usando el delimitador adecuado según el sistema operativo
+    paths = os.environ["PATH"].split(os.pathsep)
 
-    def create_input_widgets(self):
-        input_frame = ttk.Frame(self.input_tab)
-        input_frame.pack(padx=10, pady=10)
+    # Iterar sobre cada ruta en el PATH
+    for path in paths:
+        # Combinar la ruta con el nombre del archivo ejecutable
+        ruta_completa = os.path.join(path, nombre_ejecutable)
+        # Verificar si el archivo existe y es ejecutable
+        if os.path.isfile(ruta_completa) and os.access(ruta_completa, os.X_OK):
+            return ruta_completa
 
-        self.input_label = ttk.Label(input_frame, text="Archivo de entrada seleccionado:")
-        self.input_label.grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
+    # Si no se encontró el ejecutable, devolver None
+    return None
 
-        self.input_entry = ttk.Entry(input_frame, state="readonly")
-        self.input_entry.grid(row=0, column=1, padx=5, pady=5)
+# Nombre del ejecutable 
+nombre_ejecutable = "minizinc.exe"
 
-    def select_input_file(self):
-        file_path = filedialog.askopenfilename(title="Seleccionar archivo de entrada", filetypes=[("Archivos de texto", "*.txt")])
-        self.input_entry.configure(state="normal")
-        self.input_entry.delete(0, tk.END)
-        self.input_entry.insert(0, file_path)
-        self.input_entry.configure(state="readonly")
+# Llamado de función para encontrar el ejecutable
+ruta_ejecutable = encontrar_ejecutable(nombre_ejecutable)
 
-    def generate_dzn_file(self, file_path):
-        with open(file_path, "r") as input_file:
-            lines = input_file.readlines()
+if ruta_ejecutable:
+    print(f"Se encontró el ejecutable en: {ruta_ejecutable}")
+else:
+    print("No se encontró el ejecutable en el PATH.")
 
-        n = int(lines[0].strip())
-        m = int(lines[1].strip())
-        fi = [float(x) for x in lines[2].strip().split(",")]
-        ci = [int(x) for x in lines[3].strip().split(",")]
-        dc = [float(x) for x in lines[4].strip().split(",")]
-        bci = []
-        for row in lines[5:5+n]:
-            bci.append([float(x) for x in row.strip().split(",")])
-
-        with open("DatosPUICA.dzn", "w") as file:
-            file.write(f"n = {n}; % Número de clientes\n")
-            file.write(f"m = {m}; % Número de sitios posibles para instalaciones\n")
-            file.write(f"f = [{','.join(map(str, fi))}]; % Costos fijos de abrir cada instalación\n")
-            file.write(f"c = [{','.join(map(str, ci))}]; % Capacidades máximas de producción de cada instalación\n")
-            file.write(f"d = [{','.join(map(str, dc))}]; % Demandas de los clientes\n")
-            file.write("b = [| ")
-            for row in bci:
-                file.write(",".join(map(str, row)) + ", | ")
-            file.write("|]; % Beneficios\n")
-
-    def run_model(self):
-        input_file_path = self.input_entry.get()
-        if input_file_path:
-            self.generate_dzn_file(input_file_path)
-            result = subprocess.run(["minizinc", "PUICA.mzn", "DatosPUICA.dzn"], capture_output=True, text=True)
-            self.show_output(result.stdout)
+#funcion que soluciona el problema
+def solve_problem():
+    global dzn_file_path
+    if dzn_file_path:
+        model_path = 'PUICA.mzn'  # ruta al archivo del modelo MiniZinc // debe estar en el mismo directorio
+        minizinc_executable = encontrar_ejecutable("minizinc.exe")  # Búsqueda del ejecutable de MiniZinc en el PATH
+        if minizinc_executable and os.path.exists(minizinc_executable):  # Verificar si la ruta devuelta es válida
+            print(f"Running MiniZinc with model {model_path} and data {dzn_file_path}")
+            command = [minizinc_executable, '--solver', 'coin-bc', model_path, dzn_file_path]
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = process.communicate()
+            output_text.delete(1.0, END)
+            output_text.insert(END, stdout.decode())
         else:
-            messagebox.showerror("Error", "Debe seleccionar un archivo de entrada válido.")
+            output_text.delete(1.0, END)
+            output_text.insert(END, "Ejecutable de Minizinc no se encontró en el PATH.")
+    else:
+        output_text.delete(1.0, END)
+        output_text.insert(END, "Selecciona un archivo TXT.")
 
-    def show_output(self, output):
-        self.result_text.delete("1.0", tk.END)
-        self.result_text.insert(tk.END, output)
+############################# ui #############################
+root = tk.Tk()
+root.title("Modelo PUICA")
+root.geometry("620x680")
 
-if __name__ == "__main__":
-    app = PUICAGUIApp()
-    app.mainloop()
+style = ttk.Style()
+style.configure('TButton', padding=6, relief="flat", background="#ccc", foreground="#333", font=("Arial", 12))
+style.map('TButton', background=[('active', '#999'), ('disabled', '#ccc')])
+
+frame = ttk.Frame(root, padding="10")
+frame.grid(row=0, column=0, sticky=(tk.W, tk.E))
+
+btn_select_file = ttk.Button(frame, text="Seleccionar TXT", command=select_txt_file)
+btn_select_file.grid(row=0, column=0, padx=5, pady=5)
+
+input_text_frame = ttk.LabelFrame(frame, text="Entrada")
+input_text_frame.grid(row=1, column=0, padx=5, pady=5)
+
+input_text = Text(input_text_frame, wrap='word', width=80, height=15, padx=5, pady=5, font=("Arial", 10))
+input_text.grid(row=0, column=0)
+
+input_scrollbar = Scrollbar(input_text_frame, command=input_text.yview)
+input_scrollbar.grid(row=0, column=1, sticky='nsew')
+input_text['yscrollcommand'] = input_scrollbar.set
+
+btn_solve = ttk.Button(frame, text="Solucionar", command=solve_problem)
+btn_solve.grid(row=2, column=0, padx=5, pady=5)
+
+output_text_frame = ttk.LabelFrame(frame, text="Salida")
+output_text_frame.grid(row=3, column=0, padx=5, pady=5)
+
+output_text = Text(output_text_frame, wrap='word', width=80, height=15, padx=5, pady=5, font=("Arial", 10))
+output_text.grid(row=0, column=0)
+
+output_scrollbar = Scrollbar(output_text_frame, command=output_text.yview)
+output_scrollbar.grid(row=0, column=1, sticky='nsew')
+output_text['yscrollcommand'] = output_scrollbar.set
+
+dzn_file_path = None
+
+root.mainloop()
